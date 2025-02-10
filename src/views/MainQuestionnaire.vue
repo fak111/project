@@ -6,7 +6,13 @@
       </button>
       <div class="right-actions">
         <button class="download-btn" @click="downloadQuestionnaire" :disabled="!hasAnswers">
-          <span class="download-icon">↓</span> 下载问卷
+          <span class="download-icon">↓</span> 下载PDF问卷
+        </button>
+        <!-- <button class="download-json-btn" @click="downloadJSON" :disabled="!hasAnswers">
+          <span class="download-icon">↓</span> 下载JSON格式
+        </button> -->
+        <button class="generate-report-btn" @click="generateReport" :disabled="!hasAnswers || isGenerating">
+          <span class="ai-icon">🤖</span> {{ isGenerating ? '生成中...' : '生成AI报告' }}
         </button>
         <button class="save-btn" @click="saveAnswers" :disabled="isSaving">
           {{ isSaving ? '保存中...' : '保存当前' }}
@@ -16,9 +22,22 @@
 
     <h1>生活问卷调查</h1>
 
-    <div class="debug-info" v-if="isDev">
-      <p>填写前须知：</p>
-      <pre>本问卷仅用于个人生活记录，请如实填写，不得用于任何商业用途。</pre>
+    <div class="debug-info">
+      <p class="notice-title">📝 填写前须知：</p>
+      <div class="notice-content">
+        <p>
+          <span class="emoji">🎯</span> 本问卷仅用于个人成长的<span class="highlight">记录思考</span>，仔细填写一定会有所收获。
+        </p>
+        <p>
+          <span class="emoji">💭</span> 如果自己对自己<span class="highlight">不上心</span>，那怎么会有人更<span class="highlight">了解自己</span>呢。
+        </p>
+        <p>
+          <span class="emoji">😄</span> 生成ai报告<span class="highlight">并不可靠</span>，但可以通过它来帮助认识自己。
+        </p>
+        <p>
+          <span class="emoji">✨</span> 祝愿这个问卷能给你的生活带来<span class="highlight">些许改变</span>。
+        </p>
+      </div>
     </div>
 
     <div v-if="isLoading" class="loading-overlay">
@@ -51,6 +70,21 @@
         </div>
       </div>
     </div>
+
+    <div v-if="showReportModal" class="report-modal">
+      <div class="report-content">
+        <h2 class="report-title">AI 生成的职业规划报告</h2>
+        <div class="report-body">
+          <div v-html="formatReportContent(reportContent)"></div>
+        </div>
+        <div class="report-actions">
+          <button @click="downloadReport" class="download-report-btn">
+            <span class="download-icon">↓</span> 下载报告
+          </button>
+          <button @click="showReportModal = false" class="close-btn">关闭</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -61,11 +95,15 @@ import { categories, questions } from '../data/questions'
 import axios from 'axios'
 import html2pdf from 'html2pdf.js'
 import { API_URL } from '../config/api'
+import { generateReportPrompt } from '../utils/reportPrompt'
 
 const router = useRouter()
 const answers = ref({})
 const isLoading = ref(false)
 const isSaving = ref(false)
+const isGenerating = ref(false)
+const showReportModal = ref(false)
+const reportContent = ref('')
 
 // 是否为开发环境
 const isDev = ref(import.meta.env.DEV)
@@ -136,7 +174,7 @@ const saveAnswers = async () => {
     }
   } catch (error) {
     // console.error('保存失败:', error)
-    alert('保存hhh。')
+    alert('已经保存')
     saveDraft() // 保存为草稿
   } finally {
     isSaving.value = false
@@ -246,6 +284,169 @@ const downloadQuestionnaire = async () => {
   }
 }
 
+// 添加下载JSON的方法
+const downloadJSON = () => {
+  try {
+    // 构建JSON数据
+    const jsonData = {
+      timestamp: new Date().toISOString(),
+      categories: categories,
+      answers: Object.entries(answers.value).map(([questionId, answer]) => {
+        const question = questions.find(q => q.id === questionId)
+        return {
+          id: questionId,
+          serialNumber: question?.serialNumber,
+          question: question?.text,
+          category: question?.category,
+          answer: answer
+        }
+      })
+    }
+
+    // 创建Blob对象
+    const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+
+    // 创建下载链接
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `questionnaire_${new Date().toISOString().split('T')[0]}.json`
+    document.body.appendChild(link)
+    link.click()
+
+    // 清理
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('下载JSON失败:', error)
+    alert('下载失败，请重试')
+  }
+}
+
+const generateReport = async () => {
+  if (!hasAnswers.value) return
+
+  isGenerating.value = true
+  try {
+    // 准备问卷数据
+    const questionnaireData = {
+      answers: Object.entries(answers.value).map(([questionId, answer]) => {
+        const question = questions.find(q => q.id === questionId)
+        return {
+          id: question?.serialNumber,
+          category: question?.category,
+          question: question?.text,
+          answer: answer
+        }
+      })
+    }
+
+    // 生成 prompt
+    const prompt = generateReportPrompt(questionnaireData)
+
+    // 调用 GPT API
+    const response = await axios.post('https://api.chatanywhere.tech/v1/chat/completions', {
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 2000
+    }, {
+      headers: {
+        'Authorization': `Bearer sk-gdSG6GO4T6Eh17bJtCRNkZm0btZYFsyvlu1Tp3mXt1Q15iRg`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    // 处理 AI 返回的内容
+    reportContent.value = response.data.choices[0].message.content
+    showReportModal.value = true
+  } catch (error) {
+    console.error('生成报告失败:', error)
+    alert('生成报告失败，请重试')
+  } finally {
+    isGenerating.value = false
+  }
+}
+
+// 优化格式化报告内容的方法
+const formatReportContent = (content) => {
+  if (!content) return ''
+
+  // 替换步骤标题
+  let formatted = content
+    .replace(/报告：/g, '<div class="report-section">')
+    .replace(/步骤1：|步骤1:|Step 1:|第一步：/gi,
+      '<h3 class="step-title"><span class="step-number">01</span>关键词提取</h3>')
+    .replace(/步骤2：|步骤2:|Step 2:|第二步：/gi,
+      '<h3 class="step-title"><span class="step-number">02</span>职业方向分析</h3>')
+    .replace(/步骤3：|步骤3:|Step 3:|第三步：/gi,
+      '<h3 class="step-title"><span class="step-number">03</span>最佳职业推荐</h3>')
+
+  // 格式化关键词部分
+  formatted = formatted.replace(
+    /(价值观关键词|才能关键词|理想关键词)：(.*?)(?=\n|$)/g,
+    '<div class="keyword-group"><span class="keyword-title">$1</span><div class="keyword-list">$2</div></div>'
+  )
+
+  // 格式化职业方向列表
+  formatted = formatted.replace(
+    /(\d\. .*?)(?=\n|$)/g,
+    '<div class="career-item">$1</div>'
+  )
+
+  // 高亮关键词
+  formatted = formatted.replace(/【(.*?)】/g, '<span class="highlight-keyword">$1</span>')
+
+  // 添加结尾装饰
+  formatted += '<div class="report-footer">✨ 报告生成完毕 ✨</div>'
+
+  return formatted
+}
+
+// 修改下载报告的样式
+const downloadReport = async () => {
+  try {
+    const element = document.createElement('div')
+    element.innerHTML = `
+      <div style="padding: 40px; font-family: SimSun;">
+        <div style="text-align: center; margin-bottom: 40px;">
+          <h1 style="font-size: 28px; color: #1f2937; margin-bottom: 16px;">个人发展规划报告</h1>
+          <div style="color: #6b7280; font-size: 14px;">
+            <p>用户：${JSON.parse(localStorage.getItem('user')).username}</p>
+            <p>生成日期：${new Date().toLocaleDateString('zh-CN')}</p>
+          </div>
+        </div>
+
+        <div style="line-height: 2; color: #374151;">
+          ${formatReportContent(reportContent.value)}
+        </div>
+
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
+          <p style="color: #6b7280; font-size: 12px;">本报告由 AI 助手生成，仅供参考</p>
+        </div>
+      </div>
+    `
+
+    const opt = {
+      margin: 20,
+      filename: `职业规划报告_${JSON.parse(localStorage.getItem('user')).username}_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' }
+    }
+
+    html2pdf().from(element).set(opt).save()
+  } catch (error) {
+    console.error('下载报告失败:', error)
+    alert('下载失败，请重试')
+  }
+}
+
 onMounted(() => {
   loadQuestionnaireData()
 })
@@ -271,7 +472,7 @@ onMounted(() => {
 
 .right-actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
 }
 
 .back-btn,
@@ -422,19 +623,246 @@ onMounted(() => {
 
 .debug-info {
   margin: 20px 0;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.notice-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #4f46e5;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notice-content {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #374151;
+}
+
+.notice-content p {
+  margin: 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.emoji {
+  font-size: 20px;
+  display: inline-block;
+  min-width: 24px;
+}
+
+/* 添加渐变背景和动画效果 */
+.debug-info {
+  background: linear-gradient(135deg, #f8fafc 0%, #f0f7ff 100%);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.debug-info:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.highlight {
+  background: #fef08a;  /* 浅黄色背景 */
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-weight: 600;
+  color: #854d0e;  /* 深褐色文字 */
+  display: inline-block;
+  line-height: 1.2;
+}
+
+.download-json-btn {
+  background: #0ea5e9;  /* 蓝色 */
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 0.2s;
+}
+
+.download-json-btn:hover {
+  background: #0284c7;
+}
+
+.download-json-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.generate-report-btn {
+  background: #8b5cf6;  /* 紫色 */
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 0.2s;
+}
+
+.generate-report-btn:hover {
+  background: #7c3aed;
+}
+
+.generate-report-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.report-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.report-content {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  max-width: 800px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.report-title {
+  font-size: 24px;
+  color: #1f2937;
+  text-align: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.report-body {
+  margin: 20px 0;
+  line-height: 1.8;
+  color: #374151;
+  font-size: 16px;
+}
+
+.report-body :deep(.step-title) {
+  color: #1f2937;
+  font-size: 22px;
+  margin: 30px 0 20px;
+  padding: 15px 20px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f0f7ff 100%);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.report-body :deep(.step-number) {
+  background: #4f46e5;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 16px;
+}
+
+.report-body :deep(.keyword-group) {
+  margin: 15px 0;
   padding: 15px;
   background: #f8fafc;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border-left: 4px solid #4f46e5;
 }
 
-.debug-info pre {
-  white-space: pre-wrap;
-  font-family: monospace;
-  font-size: 12px;
-  margin: 10px 0;
-  padding: 10px;
-  background: #fff;
+.report-body :deep(.keyword-title) {
+  color: #4f46e5;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.report-body :deep(.keyword-list) {
+  color: #374151;
+  line-height: 1.8;
+}
+
+.report-body :deep(.career-item) {
+  margin: 12px 0;
+  padding: 12px 16px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.report-body :deep(.career-item:hover) {
+  transform: translateX(5px);
+  border-color: #4f46e5;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.report-body :deep(.highlight-keyword) {
+  background: #fef9c3;
+  color: #854d0e;
+  padding: 2px 6px;
   border-radius: 4px;
+  font-weight: 500;
+}
+
+.report-body :deep(.report-footer) {
+  text-align: center;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 2px solid #e5e7eb;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.report-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.download-report-btn {
+  background: #10b981;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.close-btn {
+  background: #f3f4f6;
+  color: #374151;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
 }
 </style>

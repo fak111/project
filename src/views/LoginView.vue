@@ -106,63 +106,24 @@ const handleLogin = async () => {
     })
 
     console.log('登录响应：', res)
-    console.log('登录响应数据结构：', {
-      status: res.data.status,
-      message: res.data.message,
-      data: res.data.data,
-      fullData: JSON.stringify(res.data, null, 2)
-    })
 
-    if (res.data && res.data.status === 200 && res.data.data) {
-      console.log('用户数据位置：', {
-        directData: res.data.data,
-        nestedData: res.data.data.data,
-        user: res.data.data.user
-      })
-
+    if (res.data && res.data.status === 200) {
       const userData = {
-        id: res.data.data.id || res.data.data._id || res.data.data.user?.id || res.data.data.user?._id,
-        username: res.data.data.username || res.data.data.user?.username,
-        phone: res.data.data.phone || res.data.data.user?.phone,
-        createdAt: res.data.data.createdAt || res.data.data.user?.createdAt
+        id: res.data.data.user.id,
+        username: res.data.data.user.username,
+        phone: res.data.data.user.phone,
+        createdAt: res.data.data.user.createdAt
       }
 
-      console.log('解析后的用户数据:', userData)
-
-      if (userData.id && userData.username) {
-        localStorage.setItem('user', JSON.stringify(userData))
-        console.log('用户信息已保存到localStorage:', userData)
-        router.push('/home')
-      } else {
-        console.error('用户数据缺少必要字段:', userData)
-        throw new Error('无效的用户数据')
-      }
+      localStorage.setItem('user', JSON.stringify(userData))
+      console.log('用户信息已保存到localStorage:', userData)
+      router.push('/home')
     } else {
-      console.error('响应数据结构异常:', res.data)
-      throw new Error(res.data?.message || '登录失败：服务器响应异常')
+      throw new Error(res.data?.message || '登录失败')
     }
   } catch (error) {
     console.error('登录错误详情：', error)
-
-    if (error.response) {
-      switch (error.response.status) {
-        case 401:
-          errorMsg.value = '用户名或密码错误'
-          break
-        case 404:
-          errorMsg.value = '用户不存在'
-          break
-        case 500:
-          errorMsg.value = '服务器错误，请稍后重试'
-          break
-        default:
-          errorMsg.value = error.response.data?.message || '未知错误'
-      }
-    } else if (error.request) {
-      errorMsg.value = '网络错误，请检查您的网络连接'
-    } else {
-      errorMsg.value = error.message || '登录失败，请稍后重试'
-    }
+    errorMsg.value = '登录失败，请检查用户名和密码'
   } finally {
     isLoading.value = false
   }

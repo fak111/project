@@ -26,7 +26,7 @@ export const questions: Question[] = [
   {
     id: 'admired-person',
     serialNumber: '101',
-    text: '你有崇拜的人么？你为什么喜欢/崇拜他/她？喜欢/崇拜什么地方？',
+    text: '你有崇拜的人么(至少写一人)？你为什么喜欢/崇拜ta？喜欢/崇拜什么地方？',
     category: 'values',
     answer: '',
     elaboration: ''
@@ -34,7 +34,7 @@ export const questions: Question[] = [
   {
     id: 'youth-impact',
     serialNumber: '102',
-    text: '你在青春期或人生最活跃时期（11～18）是否有对你影响很大的事情？',
+    text: '你在青春期或人生最活跃时期（11～18）对你影响很大的事情是(至少写一件)？',
     category: 'values',
     answer: '',
     elaboration: ''
@@ -42,7 +42,7 @@ export const questions: Question[] = [
   {
     id: 'environment-improvement',
     serialNumber: '103',
-    text: '现在你生活的环境有什么不足？需要改善的地方？',
+    text: '现在你生活的环境有什么不足(至少写一件)？需要改善的地方？',
     category: 'values',
     answer: '',
     elaboration: ''
@@ -50,7 +50,7 @@ export const questions: Question[] = [
   {
     id: 'others-perception',
     serialNumber: '104',
-    text: '问问你周围的人：你是一个看中什么的人？在意什么的人？',
+    text: '问问你周围的人(需要别人作答哦)：你是一个看中什么的人？在意什么的人？',
     category: 'values',
     answer: '',
     elaboration: ''
@@ -76,7 +76,7 @@ export const questions: Question[] = [
   {
     id: 'impatience',
     serialNumber: '202',
-    text: '最近一次对别人不耐烦的事情是什么？（因为你有一些天赋，你认为别人也有，其实没有，所以你表现出不耐烦）',
+    text: '最近一次对别人不耐烦的事情是什么？（因为你有一些天赋并不自知。你认为ta也有，其实ta没有，所以你表现出不耐烦）',
     category: 'ability',
     answer: '',
     elaboration: ''
@@ -84,7 +84,7 @@ export const questions: Question[] = [
   {
     id: 'strengths',
     serialNumber: '203',
-    text: '问问你周围的人：你擅长什么？',
+    text: '问问你周围的人(需要别人作答哦)：你擅长什么？',
     category: 'ability',
     answer: '',
     elaboration: ''
@@ -92,7 +92,7 @@ export const questions: Question[] = [
   {
     id: 'alternative-career',
     serialNumber: '204',
-    text: '如果放弃现在的工作/事业，你想干什么？',
+    text: '如果放弃现在的工作/事业/学业，你想干什么？',
     category: 'ability',
     answer: '',
     elaboration: ''
@@ -134,7 +134,7 @@ export const questions: Question[] = [
   {
     id: 'gratitude',
     serialNumber: '304',
-    text: '你有想要感谢的人和事么？',
+    text: '你有想要感谢的人和事么？说明原因。',
     category: 'wishes',
     answer: '',
     elaboration: ''
@@ -142,7 +142,7 @@ export const questions: Question[] = [
   {
     id: 'world-dissatisfaction',
     serialNumber: '305',
-    text: '你对这个世界有什么不满么？',
+    text: '你对这个世界有什么不满么？说明原因。',
     category: 'wishes',
     answer: '',
     elaboration: ''
