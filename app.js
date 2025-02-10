@@ -163,12 +163,12 @@ app.post('/friend-response', async (req, res) => {
 });
 
 // 启动服务器
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 const HOST = '0.0.0.0';
 
 app.listen(PORT, HOST, () => {
     console.log(`Server is running on ${HOST}:${PORT}`);
-    console.log('Backend URL: http://devbox.ns-okcso68c.svc.cluster.local:3000');
+    console.log(`Backend URL: http://localhost:${PORT}`);
     console.log('CORS: Allowing all origins');
 
     connectDB().then(() => {

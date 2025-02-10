@@ -1,8 +1,8 @@
 const { Sequelize } = require('sequelize');
 
 const sequelize = new Sequelize('questionnaire_db', 'root', 'ljld4cs9', {
-    host: 'lfmq-mysql.ns-okcso68c.svc',
-    port: 3306,
+    host: 'dbconn.sealoshzh.site',
+    port: 47062,
     dialect: 'mysql',
     pool: {
         max: 5,
