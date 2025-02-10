@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import LoginView from '../views/LoginView.vue'
+import LoginView from '../modules/auth/views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import HomeView from '../views/HomeView.vue'
 import MainQuestionnaire from '../views/MainQuestionnaire.vue'
@@ -43,24 +43,33 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
     console.log('路由守卫 - 目标路由:', to.path)
 
-    const userStr = localStorage.getItem('user')
-    console.log('路由守卫 - 用户状态:', userStr)
+    // 如果访问的是登录或注册页面，直接放行
+    if (to.name === 'login' || to.name === 'register') {
+        next()
+        return
+    }
 
-    // 解析用户数据并验证
+    // 获取并验证用户信息
+    const userStr = localStorage.getItem('user')
+    console.log('路由守卫 - 用户数据:', userStr)
+
     let isValidUser = false
     try {
-        const userData = JSON.parse(userStr)
-        isValidUser = userData && userData.id && userData.username
+        if (userStr) {
+            const userData = JSON.parse(userStr)
+            isValidUser = !!(userData && userData.id && userData.username)
+            console.log('路由守卫 - 用户验证结果:', isValidUser)
+        }
     } catch (error) {
-        console.error('��析用户数据失败:', error)
+        console.error('路由守卫 - 解析用户数据失败:', error)
+        localStorage.removeItem('user') // 清除无效的用户数据
     }
 
     if (to.meta.requiresAuth && !isValidUser) {
-        console.log('需要认证，重定向到登录页')
-        localStorage.removeItem('user') // 清除无效的用户数据
+        console.log('路由守卫 - 需要认证，重定向到登录页')
         next('/')
     } else {
-        console.log('允许导航')
+        console.log('路由守卫 - 允许导航')
         next()
     }
 })

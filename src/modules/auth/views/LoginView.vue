@@ -58,6 +58,11 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import { API_URL } from '../../../config/api'
+/* 暂时注释埋点相关导入
+import { trackSDK } from '../../../services/trackService'
+import { EventName } from '../../../utils/trackSDK'
+*/
 
 const router = useRouter()
 const username = ref('')
@@ -65,20 +70,76 @@ const password = ref('')
 
 const handleLogin = async () => {
   try {
-    const res = await axios.post('https://rayqahnrrwmp.sealoshzh.site/login', {
+    // 添加请求配置
+    const config = {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    };
+
+    // 构造请求数据
+    const loginData = {
       username: username.value,
       password: password.value
-    })
+    };
 
-    if (res.status === 200) {
-      router.push('/home')
-      localStorage.setItem('user', JSON.stringify(res.data.user))
+    console.log('发送登录请求数据:', loginData);
+
+    const res = await axios.post(`${API_URL}/login`, loginData, config);
+    console.log('登录响应原始数据:', res);
+    console.log('登录响应数据:', res.data);
+
+    // 检查响应状态和数据
+    if (res.data && res.data.data && res.data.data.user) {
+      /* 暂时注释埋点
+      // 登录成功埋点
+      await trackSDK.sendEvent(EventName.LOGIN_SUCCESS, {
+        action: 'login',
+        status: 'success',
+        username: username.value,
+        source: 'web',
+        duration: Date.now() - performance.now()
+      });
+      */
+
+      // 保存用户数据到本地存储
+      const userData = {
+        id: res.data.data.user.id,
+        username: res.data.data.user.username,
+        phone: res.data.data.user.phone,
+        createdAt: res.data.data.user.createdAt
+      };
+
+      console.log('保存用户数据:', userData);
+      localStorage.setItem('user', JSON.stringify(userData));
+
+      // 跳转到首页
+      router.push('/home');
     } else {
-      alert('用户名或密码错误')
+      console.error('登录响应数据格式不正确:', res.data);
+      throw new Error('登录失败：服务器返回数据格式不正确');
     }
-
   } catch (error) {
-    alert('用户名或密码错误')
+    console.error('登录错误:', error);
+    console.error('错误详情:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+
+    /* 暂时注释埋点
+    // 登录错误埋点
+    await trackSDK.sendEvent(EventName.LOGIN_FAILED, {
+      action: 'login',
+      status: 'error',
+      username: username.value,
+      error: error.message,
+      source: 'web',
+      reason: error.response?.data?.message || error.message
+    });
+    */
+
+    alert(error.response?.data?.message || error.message || '登录失败，请检查用户名和密码');
   }
 }
 </script>

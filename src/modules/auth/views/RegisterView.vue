@@ -63,6 +63,9 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import { API_URL } from '../../../config/api'
+import { trackSDK } from '../../../services/trackService'
+import { EventName } from '../../../utils/trackSDK'
 
 const router = useRouter()
 const username = ref('')
@@ -83,21 +86,41 @@ const handleRegister = async () => {
       return
     }
 
-    const response = await axios.post('https://rayqahnrrwmp.sealoshzh.site/register', {
+    const response = await axios.post(`${API_URL}/register`, {
       username: username.value,
       phone: phone.value,
       password: password.value
     })
 
     console.log('注册成功:', response.data)
+
+    // 注册成功埋点
+    trackSDK.sendEvent(EventName.REGISTER_SUCCESS, {
+      username: username.value,
+      phone: phone.value,
+      timestamp: Date.now()
+    });
+
     alert('注册成功')
     if (response.status === 201) {
       router.push('/') // 注册成功后跳转到登录页
     } else {
+      // 注册失败埋点
+      trackSDK.sendEvent(EventName.REGISTER_FAILED, {
+        username: username.value,
+        error: '注册失败',
+        timestamp: Date.now()
+      });
       alert('注册失败')
     }
   } catch (err) {
     console.error('注册失败:', err.response?.data || err.message)
+    // 注册错误埋点
+    trackSDK.sendEvent(EventName.REGISTER_FAILED, {
+      username: username.value,
+      error: err.response?.data || err.message,
+      timestamp: Date.now()
+    });
     alert(err.response?.data || '注册失败')
   }
 }

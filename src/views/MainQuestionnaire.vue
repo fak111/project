@@ -116,7 +116,7 @@ const getCategoryQuestions = (categoryId) => {
 // 返回个人空间
 const goBack = () => {
   if (hasUnsavedChanges.value) {
-    if (confirm('您确定要离开吗hhh？')) {
+    if (confirm('您确定要离开吗？')) {
       router.push('/home')
     }
   } else {
