@@ -1,7 +1,7 @@
 // API 地址配置
 const API_BASE_URLS = {
-  production: 'http://localhost:3001',  // 如果需要的话，这里可以改回生产环境的地址
-  development: '/api'  // 开发环境使用代理
+  production: 'http://124.70.213.60:3001',  // 生产环境地址
+  development: 'http://124.70.213.60:3001'  // 开发环境地址
 }
 
 // 获取当前环境的 API 地址
@@ -11,7 +11,7 @@ export const getApiBaseUrl = () => {
 }
 
 // 导出 API 地址
-export const API_URL = getApiBaseUrl()
+export const API_URL = API_BASE_URLS.development
 
 
 // config.js
