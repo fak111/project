@@ -18,10 +18,10 @@ export default defineConfig(({ mode }) => {
       cors: true,
       proxy: {
         '/api': {
-          target: env.VITE_API_URL || 'https://124.70.213.60:3001',
+          target: env.VITE_API_URL || 'http://124.70.213.60:3001',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, ''),
-          secure: true,
+          secure: false,
           ws: true
         }
       }
