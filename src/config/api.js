@@ -1,7 +1,7 @@
 // API 地址配置
 const API_BASE_URLS = {
-  production: 'http://124.70.213.60:3001',  // 生产环境地址
-  development: 'http://124.70.213.60:3001'  // 开发环境地址
+  production: '/api',  // 生产环境使用相对路径
+  development: '/api'  // 开发环境使用相对路径
 }
 
 // 获取当前环境的 API 地址
@@ -13,6 +13,13 @@ export const getApiBaseUrl = () => {
 // 导出 API 地址
 export const API_URL = API_BASE_URLS.development
 
+// API 请求配置
+export const API_CONFIG = {
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  timeout: 5000
+}
 
 // config.js
 
