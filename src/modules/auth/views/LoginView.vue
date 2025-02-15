@@ -5,7 +5,7 @@
         <h1>Sign In to<br>Open the World</h1>
         <p>
           If you don't have an account,<br>
-          you can <a href="#" class="register-link" @click.prevent="router.push('/register')">Register here</a>.
+          you can <a href="#" class="register-link" @click.prevent="router.push('/register')">Register here(点击注册)</a>.
         </p>
       </div>
 
@@ -18,7 +18,7 @@
           <div class="form-group">
             <input type="password" v-model="password" placeholder="Password" class="form-input">
             <div class="recovery-link">
-              <a href="#">Recovery password</a>
+              <!-- <a href="#">Recovery password(点击恢复密码)</a> -->
             </div>
           </div>
 
